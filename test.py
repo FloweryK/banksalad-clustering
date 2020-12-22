@@ -1,7 +1,4 @@
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-plt.rcParams['font.family'] = 'AppleSDGothicNeoM00'
-
+import argparse
 import numpy as np
 import pandas as pd
 pd.set_option('display.max_columns', None)
@@ -9,6 +6,10 @@ pd.set_option('display.expand_frame_repr', False)
 
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+plt.rcParams['font.family'] = 'AppleSDGothicNeoM00'
+
 
 
 class Summary:
@@ -180,29 +181,30 @@ class Summary:
             ax3.set_ylim([0, 1])
 
 
-def run():
-    path = 'src/2019-12-18~2020-12-18.csv'
-    norm = True
-    mean=True
-    tol = 1e-7
-    measure = 'cosine'
+def get_arguments():
+    # Argument configuration
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--path', type=str, required=True)
 
-    '''
-    summary = Summary(path=path, norm=norm, mean=mean, figsize=(10, 15))
-    knee = summary.add_knee_finding(nrow=3, row=0, measure=measure, tol=tol)
-    summary.add_clustering_result(nrow=3, row=1, measure=measure, n_clusters=knee, tol=tol)
-    summary.plt_show()
-    '''
+
+    return parser.parse_args()
+
+
+def run():
+    args = get_arguments()
+    # path = 'src/2019-12-18~2020-12-18.csv'
+    path = args.path
+    tol = 1e-7
+    mean = False
 
     for norm in [True, False]:
-        for mean in [True, False]:
-            for measure in ['cosine', 'euclidean']:
-                print(norm, mean, measure)
-                summary = Summary(path=path, norm=norm, mean=mean, figsize=(10, 15))
-                knee = summary.add_knee_finding(nrow=3, row=0, measure=measure, tol=tol)
-                summary.add_clustering_result(nrow=3, row=1, measure=measure, n_clusters=knee, tol=tol)
-                summary.plt_savefig('measure=%s_norm=%s_mean=%s.jpg' % (str(measure), str(norm), str(mean)))
-                summary.plt_close()
+        for measure in ['cosine', 'euclidean']:
+            print(norm, mean, measure)
+            summary = Summary(path=path, norm=norm, mean=False, figsize=(10, 15))
+            knee = summary.add_knee_finding(nrow=3, row=0, measure=measure, tol=tol)
+            summary.add_clustering_result(nrow=3, row=1, measure=measure, n_clusters=knee, tol=tol)
+            summary.plt_savefig('measure=%s_norm=%s_mean=%s.jpg' % (str(measure), str(norm), str(mean)))
+            summary.plt_close()
 
 
 if __name__ == '__main__':
