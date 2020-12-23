@@ -1,13 +1,17 @@
 import argparse
 import numpy as np
 import pandas as pd
+from openpyxl import load_workbook
+from sklearn.cluster import KMeans
+from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib.pyplot as plt
+
+# pandas option
 pd.set_option('display.max_columns', None)
 pd.set_option('display.expand_frame_repr', False)
 
-from sklearn.cluster import KMeans
-from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+# matplotlib korean option
 plt.rcParams['font.family'] = 'AppleSDGothicNeoM00'
 
 
@@ -19,8 +23,17 @@ class Summary:
 
     def load_data(self, path, norm, mean):
         # load raw data
-        raw = pd.read_csv(path, index_col='날짜')
-        raw.index = pd.to_datetime(raw.index)
+        wb = load_workbook(path)
+        ws = wb['가계부 내역']
+
+        raw = pd.DataFrame(ws.values)
+        raw.columns = raw.loc[0].tolist()
+        raw = raw.drop(index=[0])
+        raw.index = raw['날짜']
+        raw = raw.drop(columns=['날짜'])
+
+        # raw = pd.read_csv(path, index_col='날짜')
+        # raw.index = pd.to_datetime(raw.index)
         raw = raw[raw['타입'] == '지출']
 
         # prerequisites
@@ -192,7 +205,7 @@ def get_arguments():
 
 def run():
     args = get_arguments()
-    # path = 'src/2019-12-18~2020-12-18.csv'
+    # path = 'src/2019-12-18~2020-12-18.xlsx'
     path = args.path
     tol = 1e-7
     mean = False
