@@ -1,6 +1,6 @@
+import argparse
 import numpy as np
 import pandas as pd
-
 from itertools import repeat
 from multiprocessing import Pool
 from openpyxl import load_workbook
@@ -10,6 +10,7 @@ from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import seaborn as sns
 
 # pandas option
 pd.set_option('display.max_columns', None)
@@ -20,7 +21,7 @@ mpl.rcParams['font.family'] = 'AppleSDGothicNeoM00'
 mpl.rcParams['axes.unicode_minus'] = False
 
 
-def run(path, norm, mean):
+def run(path, measure, norm, mean, save_as):
     # load banksalad data
     df = load_banksalad_as_df(path)
 
@@ -28,7 +29,7 @@ def run(path, norm, mean):
     df = normalize(df, norm=norm, mean=mean)
 
     # cluster summary
-    get_cluster_summary(df, measure='cosine')
+    get_cluster_summary(df, measure=measure, save_as=save_as)
 
 
 def load_banksalad_as_df(path):
@@ -79,7 +80,7 @@ def __job__kmeans_inertia(k, X):
     return KMeans(n_clusters=k, tol=1e-7).fit(X).inertia_
 
 
-def get_cluster_summary(df, measure):
+def get_cluster_summary(df, measure, save_as):
     def find_knee(X, N, trials):
         # investigate sequence, d-sequence statistically
         seq = [Pool(processes=4).starmap(__job__kmeans_inertia, zip(range(1, N), repeat(X))) for _ in range(trials)]
@@ -163,30 +164,50 @@ def get_cluster_summary(df, measure):
     ax4.set_title(measure + ' distance (after clustering)')
 
     # grouped bar chart
+    colors = sns.color_palette('hls', len(df.columns)-1)
+
     for label, group_label in df.groupby('label'):
-        ax5 = fig.add_subplot(3, df['label'].nunique(), 1 + 2 * df['label'].nunique() + label)
         group_delabel = group_label.drop(columns=['label'])
+        group_delabel = group_delabel.div(group_delabel.sum(axis=1), axis=0)
         bottom = np.zeros(len(group_delabel.index))
-        for category in group_delabel:
-            ax5.bar(group_delabel.index, group_delabel[category].to_numpy(), bottom=bottom, label=category)
+
+        # plot bars
+        ax5 = fig.add_subplot(3, df['label'].nunique(), 1 + 2 * df['label'].nunique() + label)
+        for i, category in enumerate(group_delabel):
+            ax5.bar(group_delabel.index, group_delabel[category].to_numpy(), bottom=bottom, label=category, color=colors[i])
             bottom += group_delabel[category].to_numpy()
 
+        # axis setting
         if label == df['label'].nunique()-1:
             fig.subplots_adjust(right=0.7)
             ax5.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
         ax5.set_title('#' + str(label))
         ax5.set_xticklabels([], fontsize=6, rotation=90)
         ax5.set_yticklabels([])
         ax5.set_ylim([0, 1])
 
     # show plot
-    plt.tight_layout()
-    plt.show()
+    # plt.tight_layout()
+    plt.savefig(save_as)
+    plt.close()
+
+
+def get_arguments():
+    # Argument configuration
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--path', type=str, required=True)
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
-    path = 'src/2019-12-18~2020-12-18.xlsx'
+    args = get_arguments()
+    path = args.path
+    # path = 'src/2019-12-18~2020-12-18.xlsx'
     norm = True
     mean = False
+    measure = 'cosine'
 
-    run(path=path, norm=norm, mean=mean)
+    for measure in ['cosine', 'euclidean']:
+        for norm in [True, False]:
+            run(path=path, norm=norm, mean=mean, measure=measure, save_as='measure=%s_norm=%s_mean=%s.jpg' % (measure, str(norm), str(mean)))
