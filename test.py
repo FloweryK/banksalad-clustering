@@ -21,7 +21,7 @@ mpl.rcParams['font.family'] = 'AppleSDGothicNeoM00'
 mpl.rcParams['axes.unicode_minus'] = False
 
 
-def run(path, measure, norm, mean, save_as):
+def run(path, measure, norm, mean, N, trials, save_as):
     # load banksalad data
     df = load_banksalad_as_df(path)
 
@@ -29,7 +29,7 @@ def run(path, measure, norm, mean, save_as):
     df = normalize(df, norm=norm, mean=mean)
 
     # cluster summary
-    get_cluster_summary(df, measure=measure, save_as=save_as)
+    get_cluster_summary(df, measure=measure, N=N, trials=trials, save_as=save_as)
 
 
 def load_banksalad_as_df(path):
@@ -80,7 +80,7 @@ def __job__kmeans_inertia(k, X):
     return KMeans(n_clusters=k, tol=1e-7).fit(X).inertia_
 
 
-def get_cluster_summary(df, measure, save_as):
+def get_cluster_summary(df, measure, N, trials, save_as):
     def find_knee(X, N, trials):
         # investigate sequence, d-sequence statistically
         seq = [Pool(processes=4).starmap(__job__kmeans_inertia, zip(range(1, N), repeat(X))) for _ in range(trials)]
@@ -114,71 +114,56 @@ def get_cluster_summary(df, measure, save_as):
         else:
             raise KeyError
 
-    # visualize
-    fig = plt.figure(figsize=(10, 15))
+    def visualize_elbow_method(position, seq, dseq, knee):
+        ax1 = fig.add_subplot(*position)
 
-    # visualize elbow method
-    # TODO: currently using hard-coded N and trials
-    seq, dseq, knee = find_knee(X=convert_metric(df, measure), N=15, trials=1)
+        ax2 = ax1.twinx()
+        ax1.plot(np.arange(1, len(seq) + 1), seq, 'bx-')
+        ax2.plot(np.arange(1, len(dseq) + 1), dseq, 'rx-')
+        ax2.text(knee, dseq[knee - 1], 'knee: %i' % knee, size=13, horizontalalignment='center', verticalalignment='top')
+        ax1.set_xlabel('K')
+        ax1.set_ylabel('Sum_of_squared_distances')
+        ax2.set_ylabel('dJ')
+        ax1.set_xticks(np.arange(1, len(seq) + 1, 2))
+        ax1.set_title('Elbow Method For Optimal k')
+        ax1.grid(which='both')
 
-    ax1 = fig.add_subplot(3, 2, (1, 2))
-    ax2 = ax1.twinx()
-    ax1.plot(np.arange(1, len(seq) + 1), seq, 'bx-')
-    ax2.plot(np.arange(1, len(dseq) + 1), dseq, 'rx-')
-    ax2.text(knee, dseq[knee - 1], 'knee: %i' % knee, size=13, horizontalalignment='center', verticalalignment='top')
-    ax1.set_xlabel('K')
-    ax1.set_ylabel('Sum_of_squared_distances')
-    ax2.set_ylabel('dJ')
-    ax1.set_xticks(np.arange(1, len(seq) + 1, 2))
-    ax1.set_title('Elbow Method For Optimal k')
-    ax1.grid(which='both')
+    def visualize_heatmap(positions, hm_before, hm_after):
+        ax3 = fig.add_subplot(*positions[0])
+        ax4 = fig.add_subplot(*positions[1])
 
-    # visualize heatmap
-    df['label'] = find_knee_labels(X=convert_metric(df, measure), knee=knee)
-    hm_before = convert_metric(df.reset_index().set_index(['label', '날짜']).sort_index(axis=0, level=1), measure)
-    hm_after = convert_metric(df.reset_index().set_index(['label', '날짜']).sort_index(axis=0, level=0), measure)
+        ____ = ax3.imshow(hm_before, cmap='viridis_r')
+        plt4 = ax4.imshow(hm_after, cmap='viridis_r')
+        for i in range(len(df['label'].value_counts())):
+            x = df['label'].value_counts()[:i].sum() - 0.5
+            ax4.text(x, x, '#' + str(i), verticalalignment='top', horizontalalignment='left')
+            ax4.axvline(x, color='white')
+            ax4.axhline(x, color='white')
+        cax3 = make_axes_locatable(ax3).append_axes("right", size="5%", pad=0.05)
+        cax4 = make_axes_locatable(ax4).append_axes("right", size="5%", pad=0.05)
+        cax3.axis('off')
+        plt.colorbar(plt4, cax=cax4)
+        ax3.set_xticks(np.arange(len(hm_before)))
+        ax3.set_yticks(np.arange(len(hm_before)))
+        ax4.set_xticks(np.arange(len(hm_after)))
+        ax4.set_yticks(np.arange(len(hm_after)))
+        ax3.set_xticklabels([])
+        ax3.set_yticklabels([])
+        ax4.set_xticklabels([])
+        ax4.set_yticklabels([])
+        ax3.set_title(measure + ' distance (before clustering)')
+        ax4.set_title(measure + ' distance (after clustering)')
 
-    ax3 = fig.add_subplot(3, 2, 3)
-    ax4 = fig.add_subplot(3, 2, 4)
-    plt3 = ax3.imshow(hm_before, cmap='viridis_r')
-    plt4 = ax4.imshow(hm_after, cmap='viridis_r')
-    for i in range(len(df['label'].value_counts())):
-        x = df['label'].value_counts()[:i].sum() - 0.5
-        ax4.text(x, x, '#' + str(i), verticalalignment='top', horizontalalignment='left')
-        ax4.axvline(x, color='white')
-        ax4.axhline(x, color='white')
-    cax3 = make_axes_locatable(ax3).append_axes("right", size="5%", pad=0.05)
-    cax4 = make_axes_locatable(ax4).append_axes("right", size="5%", pad=0.05)
-    cax3.axis('off')
-    plt.colorbar(plt4, cax=cax4)
-    ax3.set_xticks(np.arange(len(hm_before)))
-    ax3.set_yticks(np.arange(len(hm_before)))
-    ax4.set_xticks(np.arange(len(hm_after)))
-    ax4.set_yticks(np.arange(len(hm_after)))
-    ax3.set_xticklabels([])
-    ax3.set_yticklabels([])
-    ax4.set_xticklabels([])
-    ax4.set_yticklabels([])
-    # TODO: title set
-    ax3.set_title(measure + ' distance (before clustering)')
-    ax4.set_title(measure + ' distance (after clustering)')
+    def visualize_bar_chart(position, group, legend=False):
+        ax5 = fig.add_subplot(*position)
+        bottom = np.zeros(len(group.index))
+        colors = sns.color_palette('hls', len(group.columns))
 
-    # grouped bar chart
-    colors = sns.color_palette('hls', len(df.columns)-1)
+        for i, category in enumerate(group):
+            ax5.bar(group.index, group[category].to_numpy(), bottom=bottom, label=category, color=colors[i])
+            bottom += group[category].to_numpy()
 
-    for label, group_label in df.groupby('label'):
-        group_delabel = group_label.drop(columns=['label'])
-        group_delabel = group_delabel.div(group_delabel.sum(axis=1), axis=0)
-        bottom = np.zeros(len(group_delabel.index))
-
-        # plot bars
-        ax5 = fig.add_subplot(3, df['label'].nunique(), 1 + 2 * df['label'].nunique() + label)
-        for i, category in enumerate(group_delabel):
-            ax5.bar(group_delabel.index, group_delabel[category].to_numpy(), bottom=bottom, label=category, color=colors[i])
-            bottom += group_delabel[category].to_numpy()
-
-        # axis setting
-        if label == df['label'].nunique()-1:
+        if legend:
             fig.subplots_adjust(right=0.7)
             ax5.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
@@ -186,6 +171,35 @@ def get_cluster_summary(df, measure, save_as):
         ax5.set_xticklabels([], fontsize=6, rotation=90)
         ax5.set_yticklabels([])
         ax5.set_ylim([0, 1])
+
+    # visualize
+    fig = plt.figure(figsize=(15, 15))
+
+    # visualize elbow method
+    seq, dseq, knee = find_knee(X=convert_metric(df, measure),
+                                trials=trials,
+                                N=N)
+    visualize_elbow_method(position=(4, 2, (1, 2)),
+                           seq=seq,
+                           dseq=dseq,
+                           knee=knee)
+
+    # visualize heatmap
+    df['label'] = find_knee_labels(X=convert_metric(df, measure),
+                                   knee=knee)
+    hm_before = convert_metric(df.reset_index().set_index(['label', '날짜']).sort_index(axis=0, level=1), measure)
+    hm_after = convert_metric(df.reset_index().set_index(['label', '날짜']).sort_index(axis=0, level=0), measure)
+    visualize_heatmap(positions=[(4, 2, 3), (4, 2, 4)],
+                      hm_before=hm_before,
+                      hm_after=hm_after)
+
+    # visualize grouped bar chart
+    for label, group_label in df.groupby('label'):
+        group_label = group_label.drop(columns=['label'])
+        group_label = group_label.div(group_label.sum(axis=1), axis=0)
+        visualize_bar_chart(position=(4, df['label'].nunique(), 1 + 2 * df['label'].nunique() + label),
+                            group=group_label,
+                            legend=(label == df['label'].nunique() - 1))
 
     # show plot
     # plt.tight_layout()
@@ -201,13 +215,21 @@ def get_arguments():
 
 
 if __name__ == '__main__':
-    args = get_arguments()
-    path = args.path
-    # path = 'src/2019-12-18~2020-12-18.xlsx'
+    # args = get_arguments()
+    # path = args.path
+    path = 'src/2019-12-18~2020-12-18.xlsx'
     norm = True
     mean = False
     measure = 'cosine'
+    N = 15
+    trials = 1
 
-    for measure in ['cosine', 'euclidean']:
-        for norm in [True, False]:
-            run(path=path, norm=norm, mean=mean, measure=measure, save_as='measure=%s_norm=%s_mean=%s.jpg' % (measure, str(norm), str(mean)))
+    for measure in ['cosine']:
+        for norm in [True]:
+            run(path=path,
+                norm=norm,
+                mean=mean,
+                measure=measure,
+                N=N,
+                trials=trials,
+                save_as='measure=%s_norm=%s_mean=%s.jpg' % (measure, str(norm), str(mean)))
