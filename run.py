@@ -23,6 +23,10 @@ def run(path, freq, measure, norm, mean, N, trials, save_as):
     df = load_banksalad_as_df(path=path,
                               freq=freq)
 
+    # prepare original data
+    # TODO: discard dependency of this line
+    df_org = df
+
     # normalize
     df = normalize(df=df,
                    norm=norm,
@@ -61,13 +65,15 @@ def run(path, freq, measure, norm, mean, N, trials, save_as):
     plt.close()
 
     # clustering results
-    fig2 = plt.figure(figsize=(15, 10))
+    n_clusters = df['label'].nunique()
+    df_org['label'] = df['label']
+    fig2 = plt.figure(figsize=(3*n_clusters, 10))
 
     # visualize grouped bar chart
-    for label, group_label in df.groupby('label'):
+    # use original df only
+    for label, group_label in df_org.groupby('label'):
         group_label = group_label.drop(columns=['label'])
         group_label = group_label.div(group_label.sum(axis=1), axis=0)
-        n_clusters = df['label'].nunique()
 
         visualize_bar_chart(fig=fig2,
                             position=(2, n_clusters, 1+0*n_clusters+label),
@@ -77,11 +83,17 @@ def run(path, freq, measure, norm, mean, N, trials, save_as):
                               position=(2, n_clusters, 1+1*n_clusters+label),
                               group=group_label)
 
-    # show plot
     plt.tight_layout()
     plt.savefig('test2.jpg')
     plt.close()
-    # plt.close()
+
+    # visualize cluster result in 2D
+    fig3 = plt.figure(figsize=(10, 10))
+    visualize_in_2D(fig3, df.drop(columns=['label']), df['label'].reset_index().drop(columns=['날짜']))
+
+    plt.tight_layout()
+    plt.savefig('test3.jpg')
+    plt.close()
 
 
 def get_arguments():
@@ -95,7 +107,7 @@ if __name__ == '__main__':
     # args = get_arguments()
     # path = args.path
     path = 'src/2019-12-18~2020-12-18.xlsx'
-    freq = 'D'
+    freq = 'W'
     norm = True
     mean = False
     measure = 'cosine'

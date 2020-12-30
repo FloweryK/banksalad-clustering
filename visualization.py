@@ -1,8 +1,10 @@
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from math import pi
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from sklearn.decomposition import PCA
 
 
 def visualize_elbow_method(fig, position, seq, dseq, knee):
@@ -91,3 +93,14 @@ def visualize_radar_chart(fig, position, group):
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.set_thetagrids(angles[:-1]*(180/pi), labels=categories, fontsize=8)
+
+
+def visualize_in_2D(fig, df, labels):
+    ax = fig.add_subplot()
+
+    X = PCA(n_components=2).fit_transform(df)
+    X = pd.DataFrame(X, columns=['x', 'y'])
+    X['labels'] = labels
+    print(X)
+    sns.scatterplot(x='x', y='y', hue='labels', ax=ax, data=X)
+
