@@ -18,17 +18,18 @@ mpl.rcParams['font.family'] = 'AppleSDGothicNeoM00'
 mpl.rcParams['axes.unicode_minus'] = False
 
 
-def run(path, measure, norm, mean, N, trials, save_as):
+def run(path, freq, measure, norm, mean, N, trials, save_as):
     # load banksalad data
-    df = load_banksalad_as_df(path)
+    df = load_banksalad_as_df(path=path,
+                              freq=freq)
 
     # normalize
     df = normalize(df=df,
                    norm=norm,
                    mean=mean)
 
-    # visualize
-    fig = plt.figure(figsize=(15, 10))
+    # clustering performance
+    fig1 = plt.figure(figsize=(15, 10))
 
     # perform elbow method
     seq, dseq, knee = find_knee(X=convert_metric(df, measure),
@@ -40,20 +41,27 @@ def run(path, measure, norm, mean, N, trials, save_as):
                                       n_clusters=knee)
 
     # visualize elbow method
-    visualize_elbow_method(fig=fig,
-                           position=(4, 2, (1, 2)),
+    visualize_elbow_method(fig=fig1,
+                           position=(2, 2, (1, 2)),
                            seq=seq,
                            dseq=dseq,
                            knee=knee)
 
     # visualize before & after clustering heatmap
-    visualize_heatmap(fig=fig,
-                      position=(4, 2, 3),
+    visualize_heatmap(fig=fig1,
+                      position=(2, 2, 3),
                       hm=convert_metric(df.drop(columns=['label']), measure))
-    visualize_heatmap(fig=fig,
-                      position=(4, 2, 4),
+    visualize_heatmap(fig=fig1,
+                      position=(2, 2, 4),
                       hm=convert_metric(df.sort_values('label').drop(columns=['label']), measure),
                       colorbar=True)
+
+    plt.tight_layout()
+    plt.savefig('test1.jpg')
+    plt.close()
+
+    # clustering results
+    fig2 = plt.figure(figsize=(15, 10))
 
     # visualize grouped bar chart
     for label, group_label in df.groupby('label'):
@@ -61,18 +69,18 @@ def run(path, measure, norm, mean, N, trials, save_as):
         group_label = group_label.div(group_label.sum(axis=1), axis=0)
         n_clusters = df['label'].nunique()
 
-        visualize_bar_chart(fig=fig,
-                            position=(4, n_clusters, 1+2*n_clusters+label),
+        visualize_bar_chart(fig=fig2,
+                            position=(2, n_clusters, 1+0*n_clusters+label),
                             group=group_label,
                             legend=(label == n_clusters - 1))
-        visualize_radar_chart(fig=fig,
-                              position=(4, n_clusters, 1+3*n_clusters+label),
+        visualize_radar_chart(fig=fig2,
+                              position=(2, n_clusters, 1+1*n_clusters+label),
                               group=group_label)
 
     # show plot
     plt.tight_layout()
-    plt.show()
-    # plt.savefig(save_as)
+    plt.savefig('test2.jpg')
+    plt.close()
     # plt.close()
 
 
@@ -87,6 +95,7 @@ if __name__ == '__main__':
     # args = get_arguments()
     # path = args.path
     path = 'src/2019-12-18~2020-12-18.xlsx'
+    freq = 'D'
     norm = True
     mean = False
     measure = 'cosine'
@@ -94,9 +103,10 @@ if __name__ == '__main__':
     trials = 1
 
     run(path=path,
+        freq=freq,
         norm=norm,
         mean=mean,
         measure=measure,
         N=N,
         trials=trials,
-        save_as='measure=%s_norm=%s_mean=%s.jpg' % (measure, str(norm), str(mean)))
+        save_as='freq=%s_measure=%s_norm=%s_mean=%s.jpg' % (freq, measure, str(norm), str(mean)))

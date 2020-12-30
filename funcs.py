@@ -3,7 +3,7 @@ from openpyxl import load_workbook
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 
 
-def load_banksalad_as_df(path):
+def load_banksalad_as_df(path, freq):
     # open xlsx worksheet
     wb = load_workbook(path)
     ws = wb['가계부 내역']
@@ -24,13 +24,14 @@ def load_banksalad_as_df(path):
     df = pd.DataFrame(columns=set(raw['대분류']))
 
     # TODO: currently using hard-coded grouping options
-    for date, group in raw.groupby(pd.Grouper(freq='W')):
+    for date, group in raw.groupby(pd.Grouper(freq=freq)):
         df.loc[date] = {category: abs(group2['금액'].sum()) for category, group2 in group.groupby('대분류')}
 
     # beautify dataframe
     df = df.fillna(0)
     df = df.sort_index(axis=0)
     df = df.sort_index(axis=1, key=lambda x: df[x].sum(), ascending=False)
+    df = df[(df.T != 0).any()]
     df.index = df.index.strftime('%Y-%m-%d')
     df.index.name = '날짜'
 
