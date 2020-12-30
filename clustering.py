@@ -13,7 +13,7 @@ def find_knee(X, N, trials):
     # investigate sequence, d-sequence statistically
     seq = [Pool(processes=4).starmap(__job__kmeans_inertia, zip(range(1, N), repeat(X))) for _ in range(trials)]
     seq = np.array(seq)[:, 1:]
-    dseq = abs(seq[:, 1:] - seq[:, :-1]) / (1e-5 + seq[:, :-1])
+    dseq = abs(seq[:, 1:] - seq[:, :-1]) / (seq[:, :-1])
     seq = seq.mean(axis=0)
     dseq = dseq.mean(axis=0)
 

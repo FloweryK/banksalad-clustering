@@ -76,7 +76,7 @@ def visualize_radar_chart(fig, position, group):
     for i, row in group.iterrows():
         data = group.loc[i].to_list()
         data += data[:1]
-        ax.plot(angles, data, linewidth=0.5, linestyle='solid', color='grey', alpha=0.4)
+        ax.plot(angles, data, linewidth=0.5, linestyle='solid', color='grey', alpha=0.6)
 
     # mean data plot
     data = group.mean(axis=0).to_list()
@@ -90,4 +90,4 @@ def visualize_radar_chart(fig, position, group):
     ax.set_rlim([0, 0.6])
     ax.set_xticklabels([])
     ax.set_yticklabels([])
-    ax.set_thetagrids(angles[:-1]*(180/pi), labels=categories, fontsize=5)
+    ax.set_thetagrids(angles[:-1]*(180/pi), labels=categories, fontsize=8)

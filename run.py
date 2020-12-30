@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 from matplotlib import pyplot as plt
+from funcs import *
 from clustering import *
 from visualization import *
-from funcs import *
 
 # pandas max display options (only for code testing and monitoring)
 pd.set_option('display.max_columns', None)
@@ -23,37 +23,57 @@ def run(path, measure, norm, mean, N, trials, save_as):
     df = load_banksalad_as_df(path)
 
     # normalize
-    df = normalize(df, norm=norm, mean=mean)
+    df = normalize(df=df,
+                   norm=norm,
+                   mean=mean)
 
     # visualize
     fig = plt.figure(figsize=(15, 10))
 
     # perform elbow method
-    seq, dseq, knee = find_knee(X=convert_metric(df, measure), trials=trials, N=N)
+    seq, dseq, knee = find_knee(X=convert_metric(df, measure),
+                                trials=trials,
+                                N=N)
 
     # perform clustering at knee
-    df['label'] = find_cluster_labels(X=convert_metric(df, measure), n_clusters=knee)
+    df['label'] = find_cluster_labels(X=convert_metric(df, measure),
+                                      n_clusters=knee)
 
     # visualize elbow method
-    visualize_elbow_method(fig=fig, position=(3, 3, 1), seq=seq, dseq=dseq, knee=knee)
+    visualize_elbow_method(fig=fig,
+                           position=(4, 2, (1, 2)),
+                           seq=seq,
+                           dseq=dseq,
+                           knee=knee)
 
     # visualize before & after clustering heatmap
-    visualize_heatmap(fig=fig, position=(3, 3, 2), hm=convert_metric(df.reset_index().set_index(['label', '날짜']).sort_index(axis=0, level=1), measure))
-    visualize_heatmap(fig=fig, position=(3, 3, 3), hm=convert_metric(df.reset_index().set_index(['label', '날짜']).sort_index(axis=0, level=0), measure), colorbar=True)
+    visualize_heatmap(fig=fig,
+                      position=(4, 2, 3),
+                      hm=convert_metric(df.drop(columns=['label']), measure))
+    visualize_heatmap(fig=fig,
+                      position=(4, 2, 4),
+                      hm=convert_metric(df.sort_values('label').drop(columns=['label']), measure),
+                      colorbar=True)
 
     # visualize grouped bar chart
     for label, group_label in df.groupby('label'):
         group_label = group_label.drop(columns=['label'])
         group_label = group_label.div(group_label.sum(axis=1), axis=0)
-        num_clusters = df['label'].nunique()
-        visualize_bar_chart(fig=fig, position=(3, num_clusters, 1+1*num_clusters+label), group=group_label, legend=(label == num_clusters-1))
-        visualize_radar_chart(fig=fig, position=(3, num_clusters, 1+2*num_clusters+label), group=group_label)
+        n_clusters = df['label'].nunique()
+
+        visualize_bar_chart(fig=fig,
+                            position=(4, n_clusters, 1+2*n_clusters+label),
+                            group=group_label,
+                            legend=(label == n_clusters - 1))
+        visualize_radar_chart(fig=fig,
+                              position=(4, n_clusters, 1+3*n_clusters+label),
+                              group=group_label)
 
     # show plot
     plt.tight_layout()
     plt.show()
-    plt.savefig(save_as)
-    plt.close()
+    # plt.savefig(save_as)
+    # plt.close()
 
 
 def get_arguments():
@@ -73,12 +93,10 @@ if __name__ == '__main__':
     N = 15
     trials = 1
 
-    for measure in ['cosine']:
-        for norm in [True]:
-            run(path=path,
-                norm=norm,
-                mean=mean,
-                measure=measure,
-                N=N,
-                trials=trials,
-                save_as='measure=%s_norm=%s_mean=%s.jpg' % (measure, str(norm), str(mean)))
+    run(path=path,
+        norm=norm,
+        mean=mean,
+        measure=measure,
+        N=N,
+        trials=trials,
+        save_as='measure=%s_norm=%s_mean=%s.jpg' % (measure, str(norm), str(mean)))
