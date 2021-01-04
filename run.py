@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from funcs import *
 from clustering import *
 from visualization import *
+from config import *
 
 # pandas max display options (only for code testing and monitoring)
 pd.set_option('display.max_columns', None)
@@ -115,19 +116,12 @@ def get_arguments():
 
 if __name__ == '__main__':
     # args = get_arguments()
-    # path = args.path
-    path = 'src/2019-12-18~2020-12-18.xlsx'
-    freq = 'W'
-    norm = True
-    mean = False
-    measure = 'cosine'
-    N = 15
-    trials = 1
+    # PATH = args.path
 
-    run(path=path,
-        freq=freq,
-        norm=norm,
-        mean=mean,
-        measure=measure,
+    run(path=PATH,
+        freq=FREQ,
+        norm=NORM,
+        mean=MEAN,
+        measure=MEASURE,
         N=N,
-        trials=trials)
+        trials=TRIALS)
