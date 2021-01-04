@@ -3,6 +3,7 @@ import pandas as pd
 import seaborn as sns
 from math import pi
 from matplotlib import pyplot as plt
+import matplotlib.patches as patches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from sklearn.decomposition import PCA
 
@@ -25,7 +26,7 @@ def visualize_elbow_method(fig, position, seq, dseq, knee):
     ax1.grid(which='both')
 
 
-def visualize_heatmap(fig, position, hm, colorbar=False):
+def visualize_heatmap(fig, position, hm, title, colorbar=False):
     ax = fig.add_subplot(*position)
 
     # plot
@@ -41,10 +42,11 @@ def visualize_heatmap(fig, position, hm, colorbar=False):
     ax.set_yticks(np.arange(len(hm)))
     ax.set_xticklabels([])
     ax.set_yticklabels([])
+    ax.set_title(title)
     # ax.set_title(measure + ' distance (before clustering)')
 
 
-def visualize_bar_chart(fig, position, group, legend=False):
+def visualize_bar_chart(fig, position, group, title, legend=False):
     ax = fig.add_subplot(*position)
 
     # plot
@@ -60,6 +62,7 @@ def visualize_bar_chart(fig, position, group, legend=False):
     ax.set_xticklabels([], fontsize=6, rotation=90)
     ax.set_yticklabels([])
     ax.set_ylim([0, 1])
+    ax.set_title(title)
     if legend:
         fig.subplots_adjust(right=0.7)
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -96,17 +99,51 @@ def visualize_radar_chart(fig, position, group):
 
 
 def visualize_in_2D(fig, df, labels):
+    def eigsorted(cov):
+        vals, vecs = np.linalg.eigh(cov)
+        order = vals.argsort()[::-1]
+        return vals[order], vecs[:, order]
+
+    def get_eclipse_shape(group, color, nst=2, inc=1.2, lw=2):
+        cov = np.cov(group['x'], group['y'])
+        vals, vecs = eigsorted(cov)
+        theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
+        w, h = 2 * nst * np.sqrt(vals)
+        center = group.mean(axis=0).values
+        ell = patches.Ellipse(center, width=inc * w, height=inc * h, angle=theta, color=color, alpha=0.2, lw=0)
+        edge = patches.Ellipse(center, width=inc * w, height=inc * h, angle=theta, edgecolor=color, facecolor='none', lw=lw)
+        return ell, edge
+
     ax = fig.add_subplot()
 
-    # plot
+    # calculate reduced positions
     X = PCA(n_components=2).fit_transform(df)
     X = pd.DataFrame(X, columns=['x', 'y'])
-    X['labels'] = labels
+    X['label'] = labels
+
+    # plot
     sns.scatterplot(data=X,
                     x='x',
                     y='y',
-                    hue='labels',
-                    style='labels',
-                    s=300,
-                    ax=ax)
+                    hue='label',
+                    style='label',
+                    ax=ax,
+                    s=300)
+
+    # axis settings
+    ax.set_title('clustering results (PCA reduced)')
+
+    '''
+    # color setting
+    colors = sns.color_palette('hls', X['label'].nunique())
+
+    for i, (_, group) in enumerate(X.groupby('label')):
+        # scatter cluster elements
+        ax.scatter(group['x'], group['y'], color=colors[i])
+
+        # add cluster shape as eclipse
+        ell, edge = get_eclipse_shape(group, color=colors[i])
+        ax.add_artist(ell)
+        ax.add_artist(edge)'''
+
 

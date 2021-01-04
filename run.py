@@ -57,11 +57,13 @@ def run(path, freq, measure, norm, mean, N, trials):
     # visualize before & after clustering heatmap
     visualize_heatmap(fig=fig1,
                       position=(2, 2, 3),
-                      # hm=df.drop(columns=['label']).T.corr())
+                      title='before clustering (%s)' % measure,
+                      # hm=df.drop(columns=['label']).T.corr(),
                       hm=convert_metric(df.drop(columns=['label']), measure))
     visualize_heatmap(fig=fig1,
                       position=(2, 2, 4),
                       colorbar=True,
+                      title='after clustering (%s)' % measure,
                       # hm=df.sort_values('label').drop(columns=['label']).T.corr())
                       hm=convert_metric(df.sort_values('label').drop(columns=['label']), measure),)
 
@@ -83,6 +85,7 @@ def run(path, freq, measure, norm, mean, N, trials):
         visualize_bar_chart(fig=fig2,
                             position=(2, n_clusters, 1+0*n_clusters+label),
                             group=group_label,
+                            title='#%i' % label,
                             legend=(label == n_clusters - 1))
         visualize_radar_chart(fig=fig2,
                               position=(2, n_clusters, 1+1*n_clusters+label),
@@ -119,7 +122,7 @@ if __name__ == '__main__':
     mean = False
     measure = 'cosine'
     N = 15
-    trials = 30
+    trials = 1
 
     run(path=path,
         freq=freq,
