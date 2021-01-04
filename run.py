@@ -37,7 +37,6 @@ def run(path, freq, measure, norm, mean, N, trials):
                    mean=mean)
 
     # clustering performance
-    fig1 = plt.figure(figsize=(15, 10))
 
     # perform elbow method
     seq, dseq, knee = find_knee(X=convert_metric(df, measure),
@@ -48,14 +47,14 @@ def run(path, freq, measure, norm, mean, N, trials):
     df['label'] = find_cluster_labels(X=convert_metric(df, measure),
                                       n_clusters=knee)
 
-    # visualize elbow method
+    # visualize elbow method, before & after clustering heatmap
+    fig1 = plt.figure(figsize=(15, 10))
+
     visualize_elbow_method(fig=fig1,
                            position=(2, 2, (1, 2)),
                            seq=seq,
                            dseq=dseq,
                            knee=knee)
-
-    # visualize before & after clustering heatmap
     visualize_heatmap(fig=fig1,
                       position=(2, 2, 3),
                       title='before clustering (%s)' % measure,
@@ -72,13 +71,13 @@ def run(path, freq, measure, norm, mean, N, trials):
     plt.savefig(save_as + '_clustering.jpg')
     plt.close()
 
-    # clustering results
+    # copy clustering results to df_org
     n_clusters = df['label'].nunique()
     df_org['label'] = df['label']
+
+    # visualize grouped bar chart (use df_org only)
     fig2 = plt.figure(figsize=(3*n_clusters, 10))
 
-    # visualize grouped bar chart
-    # use original df only
     for label, group_label in df_org.groupby('label'):
         group_label = group_label.drop(columns=['label'])
         group_label = group_label.div(group_label.sum(axis=1), axis=0)
@@ -98,6 +97,7 @@ def run(path, freq, measure, norm, mean, N, trials):
 
     # visualize cluster result in 2D
     fig3 = plt.figure(figsize=(10, 10))
+    
     visualize_in_2D(fig=fig3,
                     df=df.drop(columns=['label']),
                     labels=df['label'].reset_index().drop(columns=['날짜']))
