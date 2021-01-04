@@ -18,7 +18,10 @@ mpl.rcParams['font.family'] = 'AppleSDGothicNeoM00'
 mpl.rcParams['axes.unicode_minus'] = False
 
 
-def run(path, freq, measure, norm, mean, N, trials, save_as):
+def run(path, freq, measure, norm, mean, N, trials):
+    # save directory
+    save_as = '%s_freq=%s_norm=%s_mean=%s_trial=%02i' % (measure, freq, str(norm), str(mean), trials)
+
     # load banksalad data
     df = load_banksalad_as_df(path=path,
                               freq=freq)
@@ -54,14 +57,16 @@ def run(path, freq, measure, norm, mean, N, trials, save_as):
     # visualize before & after clustering heatmap
     visualize_heatmap(fig=fig1,
                       position=(2, 2, 3),
+                      # hm=df.drop(columns=['label']).T.corr())
                       hm=convert_metric(df.drop(columns=['label']), measure))
     visualize_heatmap(fig=fig1,
                       position=(2, 2, 4),
-                      hm=convert_metric(df.sort_values('label').drop(columns=['label']), measure),
-                      colorbar=True)
+                      colorbar=True,
+                      # hm=df.sort_values('label').drop(columns=['label']).T.corr())
+                      hm=convert_metric(df.sort_values('label').drop(columns=['label']), measure),)
 
     plt.tight_layout()
-    plt.savefig('test1.jpg')
+    plt.savefig(save_as + '_clustering.jpg')
     plt.close()
 
     # clustering results
@@ -84,15 +89,17 @@ def run(path, freq, measure, norm, mean, N, trials, save_as):
                               group=group_label)
 
     plt.tight_layout()
-    plt.savefig('test2.jpg')
+    plt.savefig(save_as + '_grouped.jpg')
     plt.close()
 
     # visualize cluster result in 2D
     fig3 = plt.figure(figsize=(10, 10))
-    visualize_in_2D(fig3, df.drop(columns=['label']), df['label'].reset_index().drop(columns=['날짜']))
+    visualize_in_2D(fig=fig3,
+                    df=df.drop(columns=['label']),
+                    labels=df['label'].reset_index().drop(columns=['날짜']))
 
     plt.tight_layout()
-    plt.savefig('test3.jpg')
+    plt.savefig(save_as + '_2d.jpg')
     plt.close()
 
 
@@ -112,7 +119,7 @@ if __name__ == '__main__':
     mean = False
     measure = 'cosine'
     N = 15
-    trials = 1
+    trials = 30
 
     run(path=path,
         freq=freq,
@@ -120,5 +127,4 @@ if __name__ == '__main__':
         mean=mean,
         measure=measure,
         N=N,
-        trials=trials,
-        save_as='freq=%s_measure=%s_norm=%s_mean=%s.jpg' % (freq, measure, str(norm), str(mean)))
+        trials=trials)

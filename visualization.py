@@ -98,9 +98,15 @@ def visualize_radar_chart(fig, position, group):
 def visualize_in_2D(fig, df, labels):
     ax = fig.add_subplot()
 
+    # plot
     X = PCA(n_components=2).fit_transform(df)
     X = pd.DataFrame(X, columns=['x', 'y'])
     X['labels'] = labels
-    print(X)
-    sns.scatterplot(x='x', y='y', hue='labels', ax=ax, data=X)
+    sns.scatterplot(data=X,
+                    x='x',
+                    y='y',
+                    hue='labels',
+                    style='labels',
+                    s=300,
+                    ax=ax)
 
