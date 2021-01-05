@@ -4,4 +4,6 @@ __pycache__/
 venv/
 src/
 *.jpg
+*.xlsx
+*.csv
 **test**.**
