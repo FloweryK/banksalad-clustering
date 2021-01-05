@@ -1,12 +1,14 @@
+import os
 import argparse
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from funcs import *
+from config import *
 from clustering import *
 from visualization import *
-from config import *
+from data_generation import *
 
 # pandas max display options (only for code testing and monitoring)
 pd.set_option('display.max_columns', None)
@@ -21,7 +23,8 @@ mpl.rcParams['axes.unicode_minus'] = False
 
 def run(path, freq, measure, norm, mean, N, trials):
     # save directory
-    save_as = '%s_freq=%s_norm=%s_mean=%s_trial=%02i' % (measure, freq, str(norm), str(mean), trials)
+    os.makedirs('images/', exist_ok=True)
+    save_as = 'images/%s_freq=%s_norm=%s_mean=%s_trial=%02i' % (measure, freq, str(norm), str(mean), trials)
 
     # load banksalad data
     df = load_banksalad_as_df(path=path,
@@ -30,6 +33,12 @@ def run(path, freq, measure, norm, mean, N, trials):
     # prepare original data
     # TODO: discard dependency of this line
     df_org = df
+
+    # generate sampled data
+    df_gen = generate_from_clusters(DF_ORG_PATH, n_samples=200)
+
+    # concat loaded & generated data
+    df = pd.concat([df, df_gen])
 
     # normalize
     df = normalize(df=df,
@@ -72,10 +81,11 @@ def run(path, freq, measure, norm, mean, N, trials):
     plt.close()
 
     # copy clustering results to df_org
-    n_clusters = df['label'].nunique()
     df_org['label'] = df['label']
+    # df_org.to_csv(DF_ORG_PATH, encoding='utf-8-sig')
 
     # visualize grouped bar chart (use df_org only)
+    n_clusters = df['label'].nunique()
     fig2 = plt.figure(figsize=(3*n_clusters, 10))
 
     for label, group_label in df_org.groupby('label'):
