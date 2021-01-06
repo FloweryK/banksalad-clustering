@@ -30,88 +30,82 @@ def run(path, freq, measure, norm, mean, N, trials):
     df = load_banksalad_as_df(path=path,
                               freq=freq)
 
-    # prepare original data
-    # TODO: discard dependency of this line
-    df_org = df
-
-    # generate sampled data
-    df_gen = generate_from_clusters(DF_ORG_PATH, n_samples=200)
-
     # concat loaded & generated data
-    df = pd.concat([df, df_gen])
+    df = pd.concat([df, generate_from_clusters(DF_ORG_PATH, n_samples=200)])
+    df_tmp = df
 
     # normalize
-    df = normalize(df=df,
-                   norm=norm,
-                   mean=mean)
+    df = normalize(df=df, norm=norm, mean=mean)
 
-    # clustering performance
-
-    # perform elbow method
-    seq, dseq, knee = find_knee(X=convert_metric(df, measure),
-                                trials=trials,
-                                N=N)
-
-    # perform clustering at knee
-    df['label'] = find_cluster_labels(X=convert_metric(df, measure),
-                                      n_clusters=knee)
+    # perform elbow method and cluster at knee
+    seq, dseq, n_clusters = find_knee(X=convert_metric(df, measure),
+                                      trials=trials,
+                                      N=N)
+    df['label'] = find_cluster_labels(X=convert_metric(df, measure), n_clusters=n_clusters)
+    df_tmp['label'] = df['label']
 
     # visualize elbow method, before & after clustering heatmap
     fig1 = plt.figure(figsize=(15, 10))
+    hm_before = convert_metric(df.drop(columns=['label']), measure)
+    hm_after = convert_metric(df.sort_values('label').drop(columns=['label']), measure)
+    position_elbow = (2, 2, (1, 2))
+    position_hm_before = (2, 2, 3)
+    position_hm_after = (2, 2, 4)
 
     visualize_elbow_method(fig=fig1,
-                           position=(2, 2, (1, 2)),
+                           position=position_elbow,
                            seq=seq,
                            dseq=dseq,
-                           knee=knee)
+                           knee=n_clusters)
     visualize_heatmap(fig=fig1,
-                      position=(2, 2, 3),
-                      title='before clustering (%s)' % measure,
-                      # hm=df.drop(columns=['label']).T.corr(),
-                      hm=convert_metric(df.drop(columns=['label']), measure))
+                      hm=hm_before,
+                      position=position_hm_before,
+                      title='before clustering (%s)' % measure)
     visualize_heatmap(fig=fig1,
-                      position=(2, 2, 4),
-                      colorbar=True,
+                      position=position_hm_after,
+                      hm=hm_after,
                       title='after clustering (%s)' % measure,
-                      # hm=df.sort_values('label').drop(columns=['label']).T.corr())
-                      hm=convert_metric(df.sort_values('label').drop(columns=['label']), measure),)
-
+                      colorbar=True)
     plt.tight_layout()
     plt.savefig(save_as + '_clustering.jpg')
     plt.close()
 
     # copy clustering results to df_org
-    df_org['label'] = df['label']
+    # TODO how can i handle this part?
+    # df_org['label'] = df['label']
     # df_org.to_csv(DF_ORG_PATH, encoding='utf-8-sig')
 
     # visualize grouped bar chart (use df_org only)
-    n_clusters = df['label'].nunique()
+    # TODO cleaning
     fig2 = plt.figure(figsize=(3*n_clusters, 10))
 
-    for label, group_label in df_org.groupby('label'):
+    # TODO cleaning df_tmp
+    for label, group_label in df_tmp.groupby('label'):
         group_label = group_label.drop(columns=['label'])
         group_label = group_label.div(group_label.sum(axis=1), axis=0)
+        position_bar = (2, n_clusters, 1+label)
+        position_radar = (2, n_clusters, 1+1*n_clusters+label)
 
+        # TODO cleaning: group
         visualize_bar_chart(fig=fig2,
-                            position=(2, n_clusters, 1+0*n_clusters+label),
+                            position=position_bar,
                             group=group_label,
                             title='#%i' % label,
                             legend=(label == n_clusters - 1))
         visualize_radar_chart(fig=fig2,
-                              position=(2, n_clusters, 1+1*n_clusters+label),
+                              position=position_radar,
                               group=group_label)
-
     plt.tight_layout()
     plt.savefig(save_as + '_grouped.jpg')
     plt.close()
 
     # visualize cluster result in 2D
     fig3 = plt.figure(figsize=(10, 10))
-    
+
+    # TODO cleaning df
     visualize_in_2D(fig=fig3,
                     df=df.drop(columns=['label']),
                     labels=df['label'].reset_index().drop(columns=['날짜']))
-
     plt.tight_layout()
     plt.savefig(save_as + '_2d.jpg')
     plt.close()
