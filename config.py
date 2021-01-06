@@ -1,7 +1,5 @@
 PATH = 'src/2019-12-18~2020-12-18.xlsx'
-FREQ = 'W'
-MEASURE = 'cosine'
+DF_ORG_PATH = 'df_org_with_labels.csv'
+METRIC = 'cosine'
 NORM = True
-MEAN = False
-N = 15
 TRIALS = 1

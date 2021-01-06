@@ -38,20 +38,14 @@ def load_banksalad_as_df(path, freq):
     return df
 
 
-def normalize(df, norm, mean):
-    if norm:
-        # TODO: more normalize options (ex. axis=0 dividing, L2 norm)
-        df = df.div(df.sum(axis=1), axis=0)
-    if mean:
-        df -= df.mean(axis=0)
-
-    return df
+def normalize(df):
+    return df.div(df.sum(axis=1), axis=0)
 
 
-def convert_metric(df, measure):
-    if measure == 'cosine':
+def convert_metric(df, metric):
+    if metric == 'cosine':
         return 1 - cosine_similarity(df, df)
-    elif measure == 'euclidean':
+    elif metric == 'euclidean':
         return euclidean_distances(df, df)
     else:
         raise KeyError

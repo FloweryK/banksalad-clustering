@@ -2,148 +2,174 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from math import pi
-from matplotlib import pyplot as plt
-import matplotlib.patches as patches
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from sklearn.decomposition import PCA
+import matplotlib as mpl
+import matplotlib.patches as patches
+from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from funcs import convert_metric
+
+import sys
+np.set_printoptions(threshold=sys.maxsize)
 
 
-def visualize_elbow_method(fig, position, seq, dseq, knee):
-    ax1 = fig.add_subplot(*position)
+# matplotlib korean option
+# You have to manually install proper korean font if you want to use in korean.
+# Otherwise, all korean characters might not appear properly.
+mpl.rcParams['font.family'] = 'AppleSDGothicNeoM00'
+mpl.rcParams['axes.unicode_minus'] = False
+
+
+def visualize_elbow_method(seq, K):
+    dseq = abs(seq[:, 1:] - seq[:, :-1]) / (seq[:, :-1])
+    seq_std = seq.std(axis=0)
+    seq_mean = seq.mean(axis=0)
+    dseq_std = dseq.std(axis=0)
+    dseq_mean = dseq.mean(axis=0)
+    x_seq = np.arange(1, len(seq_mean) + 1)
+    x_dseq = np.arange(1, len(dseq_mean) + 1)
+
+    # prepare axis
+    fig = plt.figure(figsize=(10, 5))
+    ax1 = fig.add_subplot()
     ax2 = ax1.twinx()
 
     # plot
-    ax1.plot(np.arange(1, len(seq) + 1), seq, 'bx-')
-    ax2.plot(np.arange(1, len(dseq) + 1), dseq, 'rx-')
-    ax2.text(knee, dseq[knee - 1], 'knee: %i' % knee, size=13, horizontalalignment='center', verticalalignment='top')
+    ax1.errorbar(x_seq, seq_mean, yerr=seq_std, color='red')
+    ax2.errorbar(x_dseq, dseq_mean, yerr=dseq_std, color='blue')
+    ax2.text(K, dseq_mean[K - 1], 'knee: %i' % K, size=13, horizontalalignment='center', verticalalignment='top')
 
     # axis settings
     ax1.set_xlabel('K')
     ax1.set_ylabel('Sum_of_squared_distances')
     ax2.set_ylabel('dJ')
-    ax1.set_xticks(np.arange(1, len(seq) + 1))
+    ax1.set_xticks(x_seq)
     ax1.set_title('Elbow Method For Optimal k')
     ax1.grid(which='both')
 
-
-def visualize_heatmap(fig, position, hm, title, colorbar=False):
-    ax = fig.add_subplot(*position)
-
-    # plot
-    p = ax.imshow(hm, cmap='viridis_r')
-
-    # axis settings
-    cax = make_axes_locatable(ax).append_axes("right", size="5%", pad=0.05)
-    if colorbar:
-        plt.colorbar(p, cax=cax)
-    else:
-        cax.axis('off')
-    ax.set_xticks(np.arange(len(hm)))
-    ax.set_yticks(np.arange(len(hm)))
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    ax.set_title(title)
-    # ax.set_title(measure + ' distance (before clustering)')
+    # show
+    plt.tight_layout()
+    plt.show()
 
 
-def visualize_bar_chart(fig, position, group, title, legend=False):
-    ax = fig.add_subplot(*position)
+def visualize_heatmap(df, labels, metric):
+    df_sorted = df.copy()
+    df_sorted['label'] = labels
+    df_sorted = df_sorted.sort_values('label').drop(columns=['label'])
+    hm_before = convert_metric(df, metric)
+    hm_after = convert_metric(df_sorted, metric)
+
+    # prepare axis
+    fig = plt.figure(figsize=(10, 5))
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax2 = fig.add_subplot(1, 2, 2)
 
     # plot
-    bottom = np.zeros(len(group.index))
-    colors = sns.color_palette('hls', len(group.columns))
-
-    for i, category in enumerate(group):
-        ax.bar(group.index, group[category].to_numpy(), bottom=bottom, label=category, color=colors[i])
-        bottom += group[category].to_numpy()
+    p1 = ax1.imshow(hm_before, cmap='viridis_r')
+    p2 = ax2.imshow(hm_after, cmap='viridis_r')
 
     # axis settings
-    # ax.set_title('#' + str(label))
-    ax.set_xticklabels([], fontsize=6, rotation=90)
-    ax.set_yticklabels([])
-    ax.set_ylim([0, 1])
-    ax.set_title(title)
-    if legend:
-        fig.subplots_adjust(right=0.7)
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    cax1 = make_axes_locatable(ax1).append_axes("right", size="5%", pad=0.05)
+    cax2 = make_axes_locatable(ax2).append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(p2, cax=cax2)
+    cax1.axis('off')
+    ax1.set_xticks(np.arange(len(hm_before)))
+    ax1.set_yticks(np.arange(len(hm_before)))
+    ax1.set_xticklabels([])
+    ax1.set_yticklabels([])
+    ax1.set_title(metric + ' distance (before clustering)')
+    ax2.set_xticks(np.arange(len(hm_before)))
+    ax2.set_yticks(np.arange(len(hm_before)))
+    ax2.set_xticklabels([])
+    ax2.set_yticklabels([])
+    ax2.set_title(metric + ' distance (before clustering)')
+
+    # show
+    plt.tight_layout()
+    plt.show()
 
 
-def visualize_radar_chart(fig, position, group):
-    ax = fig.add_subplot(*position, polar=True)
+def visualize_clusters(df, labels, K):
+    df_labeled = df.copy()
+    df_labeled['label'] = labels
 
-    categories = group.columns
+    # bar
+    colors = sns.color_palette('hls', len(df_labeled.columns))
+
+    # radar
+    categories = df.columns
     num_categories = len(categories)
-    angles = [x/float(num_categories)*(2*pi) for x in range(num_categories)]
+    angles = [x / float(num_categories) * (2 * pi) for x in range(num_categories)]
     angles += angles[:1]
     angles = np.array(angles)
+    r_max = df.to_numpy().max()
 
-    # group plot
-    for i, row in group.iterrows():
-        data = group.loc[i].to_list()
+    # prepare axis
+    fig = plt.figure(figsize=(3*K, 10))
+
+    # plot
+    for i, (label, group) in enumerate(df_labeled.groupby(['label'])):
+        # drop label. we will not use it anymore
+        group = group.drop(columns=['label'])
+
+        # bar chart
+        ax_bar = fig.add_subplot(2, K, 1+i)
+
+        # plot
+        bottom = np.zeros(len(group.index))
+        for category, color in zip(group, colors):
+            ax_bar.bar(group.index, group[category].to_numpy(), bottom=bottom, label=category, color=color)
+            bottom += group[category].to_numpy()
+
+        # axis settings
+        ax_bar.set_xticklabels([], fontsize=6, rotation=90)
+        ax_bar.set_yticklabels([])
+        ax_bar.set_ylim([0, 1])
+        ax_bar.set_title('#' + str(label))
+        if i == K-1:
+            fig.subplots_adjust(right=0.7)
+            ax_bar.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+        # radar chart
+        ax_radar = fig.add_subplot(2, K, 1+K+i, polar=True)
+
+        # group plot
+        for j, row in group.iterrows():
+            data = group.loc[j].to_list()
+            data += data[:1]
+            ax_radar.plot(angles, data, linewidth=0.5, linestyle='solid', color='grey', alpha=0.6)
+
+        # mean data plot
+        data = group.mean(axis=0).to_list()
         data += data[:1]
-        ax.plot(angles, data, linewidth=0.5, linestyle='solid', color='grey', alpha=0.6)
+        ax_radar.plot(angles, data, linewidth=2, linestyle='solid')
+        ax_radar.fill(angles, data, alpha=0.4)
 
-    # mean data plot
-    data = group.mean(axis=0).to_list()
-    data += data[:1]
-    ax.plot(angles, data, linewidth=2, linestyle='solid')
-    ax.fill(angles, data, alpha=0.4)
+        # axis settings
+        ax_radar.set_theta_offset(pi / 2)
+        ax_radar.set_theta_direction(-1)
+        ax_radar.set_rlim([0, r_max])
+        ax_radar.set_xticklabels([])
+        ax_radar.set_yticklabels([])
+        ax_radar.set_thetagrids(angles[:-1] * (180 / pi), labels=categories, fontsize=8)
 
-    # axis settings
-    ax.set_theta_offset(pi / 2)
-    ax.set_theta_direction(-1)
-    ax.set_rlim([0, 0.6])
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    ax.set_thetagrids(angles[:-1]*(180/pi), labels=categories, fontsize=8)
+    # show
+    plt.tight_layout()
+    plt.show()
 
 
-def visualize_in_2D(fig, df, labels):
-    def eigsorted(cov):
-        vals, vecs = np.linalg.eigh(cov)
-        order = vals.argsort()[::-1]
-        return vals[order], vecs[:, order]
-
-    def get_eclipse_shape(group, color, nst=2, inc=1.2, lw=2):
-        cov = np.cov(group['x'], group['y'])
-        vals, vecs = eigsorted(cov)
-        theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
-        w, h = 2 * nst * np.sqrt(vals)
-        center = group.mean(axis=0).values
-        ell = patches.Ellipse(center, width=inc * w, height=inc * h, angle=theta, color=color, alpha=0.2, lw=0)
-        edge = patches.Ellipse(center, width=inc * w, height=inc * h, angle=theta, edgecolor=color, facecolor='none', lw=lw)
-        return ell, edge
-
-    ax = fig.add_subplot()
-
-    # calculate reduced positions
+def visualize_in_2D(df, labels):
     X = PCA(n_components=2).fit_transform(df)
     X = pd.DataFrame(X, columns=['x', 'y'])
     X['label'] = labels
 
     # plot
-    sns.scatterplot(data=X,
-                    x='x',
-                    y='y',
-                    hue='label',
-                    style='label',
-                    ax=ax,
-                    s=300)
+    sns.scatterplot(data=X, x='x', y='y', hue='label', style='label', s=300)
 
     # axis settings
-    ax.set_title('clustering results (PCA reduced)')
+    plt.title('clustering results (PCA reduced)')
 
-    '''
-    # color setting
-    colors = sns.color_palette('hls', X['label'].nunique())
-
-    for i, (_, group) in enumerate(X.groupby('label')):
-        # scatter cluster elements
-        ax.scatter(group['x'], group['y'], color=colors[i])
-
-        # add cluster shape as eclipse
-        ell, edge = get_eclipse_shape(group, color=colors[i])
-        ax.add_artist(ell)
-        ax.add_artist(edge)'''
-
+    # show
+    plt.tight_layout()
+    plt.show()
 
