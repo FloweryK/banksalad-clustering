@@ -7,7 +7,7 @@ from visualization import *
 from data_generation import *
 
 
-def run(banksalad_path, norm, metric, trials):
+def run(banksalad_path, generate, norm, metric, trials, label_path):
     # SAVE PATH
     os.makedirs('images/', exist_ok=True)
     save_as = 'images/%s_norm=%s_trials=%s' % (metric, norm, trials)
@@ -17,10 +17,10 @@ def run(banksalad_path, norm, metric, trials):
     df = load_banksalad_as_df(banksalad_path, freq='W')
 
     # DATA GENERATION
-    # TODO: argument -> DF_ORG_PATH
     # TODO: argument -> mul
-    # TODO: argument -> if generate data or not
-    # df = pd.concat([df, generate_from_clusters(DF_ORG_PATH, mul=10)])
+    if generate:
+        df_gen = generate_from_clusters(label_path, mul=10)
+        df = pd.concat([df, df_gen])
 
     # DATA PREPROCESSING
     # TODO: mean translate
@@ -29,7 +29,6 @@ def run(banksalad_path, norm, metric, trials):
 
     # CLUSTERING K SELECTION
     # TODO: scanning range (currently hard-coded)
-    # TODO: Kmeans random seed problem?
     seq = scan_sequence(X=convert_metric(df, metric), trials=trials)
     K = find_optimal_K(seq)
     labels = find_cluster_labels(X=convert_metric(df, metric), K=K)
@@ -40,9 +39,14 @@ def run(banksalad_path, norm, metric, trials):
     visualize_clusters(df, labels, K, save_as=save_as + '_clusters.jpg')
     visualize_in_2D(df, labels, save_as=save_as + '_PCA.jpg')
 
+    # LABEL SAVING FOR DATA GENERATION
+    if label_path:
+        pd.DataFrame({'label': labels}, index=df.index).to_excel(label_path, engine='openpyxl')
+
 
 if __name__ == '__main__':
     run(banksalad_path=PATH,
+        generate=GENERATE,
         norm=NORM,
         metric=METRIC,
         trials=TRIALS)
