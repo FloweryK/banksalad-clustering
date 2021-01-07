@@ -4,14 +4,9 @@ import seaborn as sns
 from math import pi
 from sklearn.decomposition import PCA
 import matplotlib as mpl
-import matplotlib.patches as patches
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from funcs import convert_metric
-
-import sys
-np.set_printoptions(threshold=sys.maxsize)
-
 
 # matplotlib korean option
 # You have to manually install proper korean font if you want to use in korean.
@@ -20,7 +15,7 @@ mpl.rcParams['font.family'] = 'AppleSDGothicNeoM00'
 mpl.rcParams['axes.unicode_minus'] = False
 
 
-def visualize_elbow_method(seq, K):
+def visualize_elbow_method(seq, K, save_as):
     dseq = abs(seq[:, 1:] - seq[:, :-1]) / (seq[:, :-1])
     seq_std = seq.std(axis=0)
     seq_mean = seq.mean(axis=0)
@@ -35,29 +30,36 @@ def visualize_elbow_method(seq, K):
     ax2 = ax1.twinx()
 
     # plot
-    ax1.errorbar(x_seq, seq_mean, yerr=seq_std, color='red')
-    ax2.errorbar(x_dseq, dseq_mean, yerr=dseq_std, color='blue')
-    ax2.text(K, dseq_mean[K - 1], 'knee: %i' % K, size=13, horizontalalignment='center', verticalalignment='top')
+    ax1_color = 'red'
+    ax2_color = 'blue'
+    ax1.errorbar(x_seq, seq_mean, yerr=seq_std, label='J', color=ax1_color, marker='x')
+    ax2.errorbar(x_dseq, dseq_mean, yerr=dseq_std, label='dJ', color=ax2_color, marker='x')
+    ax2.text(K, dseq_mean[K - 1]-0.01, 'knee: %i' % K, size=13, horizontalalignment='center', verticalalignment='top')
 
     # axis settings
     ax1.set_xlabel('K')
-    ax1.set_ylabel('Sum_of_squared_distances')
-    ax2.set_ylabel('dJ')
+    ax1.set_ylabel('Sum_of_squared_distances', color=ax1_color)
+    ax2.set_ylabel('dJ', color=ax2_color)
     ax1.set_xticks(x_seq)
-    ax1.set_title('Elbow Method For Optimal k')
     ax1.grid(which='both')
+    ax1.tick_params(axis='y', labelcolor=ax1_color)
+    ax2.tick_params(axis='y', labelcolor=ax2_color)
+    ax1.set_title('Elbow Method For Optimal k')
 
     # show
     plt.tight_layout()
-    plt.show()
+    plt.savefig(save_as)
+    plt.close()
 
 
-def visualize_heatmap(df, labels, metric):
+def visualize_heatmap(df, labels, metric, save_as):
     df_sorted = df.copy()
     df_sorted['label'] = labels
     df_sorted = df_sorted.sort_values('label').drop(columns=['label'])
     hm_before = convert_metric(df, metric)
     hm_after = convert_metric(df_sorted, metric)
+    contour_pos = [labels.count(label) for label in sorted(list(set(labels)))]
+    contour_pos = [sum(contour_pos[:i]) for i in range(len(contour_pos))]
 
     # prepare axis
     fig = plt.figure(figsize=(10, 5))
@@ -67,6 +69,13 @@ def visualize_heatmap(df, labels, metric):
     # plot
     p1 = ax1.imshow(hm_before, cmap='viridis_r')
     p2 = ax2.imshow(hm_after, cmap='viridis_r')
+    for i, pos in enumerate(contour_pos):
+        ax2.axvline(pos-0.5, color='white')
+        ax2.axhline(pos-0.5, color='white')
+        ax2.text(pos+1, pos+1, '#' + str(i),
+                 size=13,
+                 verticalalignment='top', horizontalalignment='left',
+                 bbox=dict(boxstyle='square', alpha=0.7, ec=(1., 0.5, 0.5), fc=(1., 0.8, 0.8)))
 
     # axis settings
     cax1 = make_axes_locatable(ax1).append_axes("right", size="5%", pad=0.05)
@@ -86,10 +95,11 @@ def visualize_heatmap(df, labels, metric):
 
     # show
     plt.tight_layout()
-    plt.show()
+    plt.savefig(save_as)
+    plt.close()
 
 
-def visualize_clusters(df, labels, K):
+def visualize_clusters(df, labels, K, save_as):
     df_labeled = df.copy()
     df_labeled['label'] = labels
 
@@ -155,10 +165,11 @@ def visualize_clusters(df, labels, K):
 
     # show
     plt.tight_layout()
-    plt.show()
+    plt.savefig(save_as)
+    plt.close()
 
 
-def visualize_in_2D(df, labels):
+def visualize_in_2D(df, labels, save_as):
     X = PCA(n_components=2).fit_transform(df)
     X = pd.DataFrame(X, columns=['x', 'y'])
     X['label'] = labels
@@ -171,5 +182,6 @@ def visualize_in_2D(df, labels):
 
     # show
     plt.tight_layout()
-    plt.show()
+    plt.savefig(save_as)
+    plt.close()
 
