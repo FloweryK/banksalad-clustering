@@ -1,3 +1,4 @@
+import random
 import numpy as np
 from itertools import repeat
 from multiprocessing import Pool
@@ -5,7 +6,7 @@ from sklearn.cluster import KMeans
 
 
 def __job__kmeans_inertia(k, X):
-    kmeans = KMeans(n_clusters=k)
+    kmeans = KMeans(n_clusters=k, random_state=random.randint(0, 1000))
     inertia = kmeans.fit(X).inertia_
     return inertia
 
