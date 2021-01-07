@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from funcs import *
 from config import *
@@ -7,6 +8,10 @@ from data_generation import *
 
 
 def run(banksalad_path, norm, metric, trials):
+    # SAVE PATH
+    os.makedirs('images/', exist_ok=True)
+    save_as = 'images/%s_norm=%s_trials=%s' % (metric, norm, trials)
+
     # DATA LOADING
     # TODO: argument -> freq
     df = load_banksalad_as_df(banksalad_path, freq='W')
@@ -30,10 +35,10 @@ def run(banksalad_path, norm, metric, trials):
     labels = find_cluster_labels(X=convert_metric(df, metric), K=K)
 
     # VISUALIZE ELBOW METHOD
-    visualize_elbow_method(seq, K)
-    visualize_heatmap(df, labels, metric)
-    visualize_clusters(df, labels, K)
-    visualize_in_2D(df, labels)
+    visualize_elbow_method(seq, K, save_as=save_as + '_elbow.jpg')
+    visualize_heatmap(df, labels, metric, save_as=save_as + '_heatmap.jpg')
+    visualize_clusters(df, labels, K, save_as=save_as + '_clusters.jpg')
+    visualize_in_2D(df, labels, save_as=save_as + '_PCA.jpg')
 
 
 if __name__ == '__main__':
