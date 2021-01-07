@@ -19,8 +19,11 @@ def run(banksalad_path, generate, norm, metric, trials, save):
     # DATA GENERATION
     # TODO: argument -> mul
     if generate:
-        df_gen = generate_from_clusters(load_path=SAVE_PATH, mul=10)
-        df = pd.concat([df, df_gen])
+        # df_gen = generate_from_clusters(load_path=SAVE_PATH, mul=10)
+        df_gen = generate_from_patterns(patterns=PATTERNS, columns=df.columns)
+        # df = pd.concat([df, df_gen])
+        df = df_gen
+    print(df)
 
     # DATA PREPROCESSING
     # TODO: mean translate
