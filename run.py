@@ -7,10 +7,10 @@ from visualization import *
 from data_generation import *
 
 
-def run(banksalad_path, generate, norm, metric, trials, label_save):
+def run(banksalad_path, generate, norm, metric, trials, save):
     # SAVE PATH
     os.makedirs('images/', exist_ok=True)
-    save_as = 'images/%s_norm=%s_trials=%s' % (metric, norm, trials)
+    save_as = 'images/%s_gen=%s_norm=%s_trials=%s' % (metric, generate, norm, trials)
 
     # DATA LOADING
     # TODO: argument -> freq
@@ -19,7 +19,7 @@ def run(banksalad_path, generate, norm, metric, trials, label_save):
     # DATA GENERATION
     # TODO: argument -> mul
     if generate:
-        df_gen = generate_from_clusters(LABEL_PATH, mul=10)
+        df_gen = generate_from_clusters(load_path=SAVE_PATH, mul=10)
         df = pd.concat([df, df_gen])
 
     # DATA PREPROCESSING
@@ -40,14 +40,16 @@ def run(banksalad_path, generate, norm, metric, trials, label_save):
     visualize_in_2D(df, labels, save_as=save_as + '_PCA.jpg')
 
     # LABEL SAVING FOR DATA GENERATION
-    if label_save:
-        pd.DataFrame({'label': labels}, index=df.index).to_excel(LABEL_PATH, engine='openpyxl')
+    if save:
+        df_label = df.copy()
+        df_label['label'] = labels
+        df_label.to_csv(SAVE_PATH, encoding='utf-8-sig')
 
 
 if __name__ == '__main__':
-    run(banksalad_path=PATH,
+    run(banksalad_path=LOAD_PATH,
         generate=GENERATE,
         norm=NORM,
         metric=METRIC,
         trials=TRIALS,
-        label_save=LABEL_SAVE)
+        save=SAVE)

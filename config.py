@@ -1,12 +1,12 @@
 # DATA LOAD & GENERATE
-PATH = 'src/2019-12-18~2020-12-18.xlsx'
-LABEL_PATH = 'labels.xlsx'
-LABEL_SAVE = False
-GENERATE = False
+LOAD_PATH = 'src/2019-12-18~2020-12-18.xlsx'
+SAVE_PATH = 'df_label.csv'
+SAVE = False
+GENERATE = True
 
 # PREPROCESSING
 NORM = True
 
 # CLUSTERING
 METRIC = 'cosine'
-TRIALS = 60
+TRIALS = 1
