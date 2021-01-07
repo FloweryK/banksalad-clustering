@@ -7,7 +7,7 @@ from visualization import *
 from data_generation import *
 
 
-def run(banksalad_path, generate, norm, metric, trials, label_path):
+def run(banksalad_path, generate, norm, metric, trials, label_save):
     # SAVE PATH
     os.makedirs('images/', exist_ok=True)
     save_as = 'images/%s_norm=%s_trials=%s' % (metric, norm, trials)
@@ -19,7 +19,7 @@ def run(banksalad_path, generate, norm, metric, trials, label_path):
     # DATA GENERATION
     # TODO: argument -> mul
     if generate:
-        df_gen = generate_from_clusters(label_path, mul=10)
+        df_gen = generate_from_clusters(LABEL_PATH, mul=10)
         df = pd.concat([df, df_gen])
 
     # DATA PREPROCESSING
@@ -40,8 +40,8 @@ def run(banksalad_path, generate, norm, metric, trials, label_path):
     visualize_in_2D(df, labels, save_as=save_as + '_PCA.jpg')
 
     # LABEL SAVING FOR DATA GENERATION
-    if label_path:
-        pd.DataFrame({'label': labels}, index=df.index).to_excel(label_path, engine='openpyxl')
+    if label_save:
+        pd.DataFrame({'label': labels}, index=df.index).to_excel(LABEL_PATH, engine='openpyxl')
 
 
 if __name__ == '__main__':
@@ -49,4 +49,5 @@ if __name__ == '__main__':
         generate=GENERATE,
         norm=NORM,
         metric=METRIC,
-        trials=TRIALS)
+        trials=TRIALS,
+        label_save=LABEL_SAVE)

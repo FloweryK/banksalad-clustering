@@ -1,6 +1,7 @@
 # DATA LOAD & GENERATE
 PATH = 'src/2019-12-18~2020-12-18.xlsx'
 LABEL_PATH = 'labels.xlsx'
+LABEL_SAVE = False
 GENERATE = False
 
 # PREPROCESSING
@@ -8,4 +9,4 @@ NORM = True
 
 # CLUSTERING
 METRIC = 'cosine'
-TRIALS = 3
+TRIALS = 60
