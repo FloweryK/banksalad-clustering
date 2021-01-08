@@ -49,3 +49,4 @@ def convert_metric(df, metric):
         return euclidean_distances(df, df)
     else:
         raise KeyError
+

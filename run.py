@@ -5,6 +5,9 @@ from config import *
 from clustering import *
 from visualization import *
 from data_generation import *
+from multiprocessing import Pool
+from itertools import repeat
+
 
 
 def run(banksalad_path, generate, norm, metric, trials, save):
@@ -23,7 +26,6 @@ def run(banksalad_path, generate, norm, metric, trials, save):
         df_gen = generate_from_patterns(patterns=PATTERNS, columns=df.columns)
         # df = pd.concat([df, df_gen])
         df = df_gen
-    print(df)
 
     # DATA PREPROCESSING
     # TODO: mean translate
@@ -32,14 +34,23 @@ def run(banksalad_path, generate, norm, metric, trials, save):
 
     # CLUSTERING K SELECTION
     # TODO: scanning range (currently hard-coded)
-    seq = scan_sequence(X=convert_metric(df, metric), trials=trials)
-    K = find_optimal_K(seq)
-    labels = find_cluster_labels(X=convert_metric(df, metric), K=K)
+    # TODO: multiprocessing
+    # clustering, visualizing as a single class
+    X = convert_metric(df, metric)
+    k_values = np.arange(1, 16)
+
+    seqs = [[KMeans(n_clusters=k, random_state=random.randint(0, 1000)).fit(X).inertia_ for k in k_values] for _ in range(trials)]
+    seqs = np.array(seqs)
+    seqs_norm = (np.max(seqs, axis=1) - seqs)
+    print(seqs_norm)
+
+    exit()
+    labels = find_kmeans_labels(X=convert_metric(df, metric), K=knee)
 
     # VISUALIZE ELBOW METHOD
-    visualize_elbow_method(seq, K, save_as=save_as + '_elbow.jpg')
+    visualize_elbow_method(seq, knee, save_as=save_as + '_elbow.jpg')
     visualize_heatmap(df, labels, metric, save_as=save_as + '_heatmap.jpg')
-    visualize_clusters(df, labels, K, save_as=save_as + '_clusters.jpg')
+    visualize_clusters(df, labels, knee, save_as=save_as + '_clusters.jpg')
     visualize_in_2D(df, labels, save_as=save_as + '_PCA.jpg')
 
     # LABEL SAVING FOR DATA GENERATION

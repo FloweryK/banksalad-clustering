@@ -15,7 +15,7 @@ mpl.rcParams['font.family'] = 'AppleSDGothicNeoM00'
 mpl.rcParams['axes.unicode_minus'] = False
 
 
-def visualize_elbow_method(seq, K, save_as):
+def visualize_elbow_method(seq, knee, save_as):
     dseq = abs(seq[:, 1:] - seq[:, :-1]) / (seq[:, :-1])
     seq_std = seq.std(axis=0)
     seq_mean = seq.mean(axis=0)
@@ -34,7 +34,7 @@ def visualize_elbow_method(seq, K, save_as):
     ax2_color = 'blue'
     ax1.errorbar(x_seq, seq_mean, yerr=seq_std, label='J', color=ax1_color, marker='x')
     ax2.errorbar(x_dseq, dseq_mean, yerr=dseq_std, label='dJ', color=ax2_color, marker='x')
-    ax2.text(K, dseq_mean[K - 1]-0.01, 'knee: %i' % K, size=13, horizontalalignment='center', verticalalignment='top')
+    # ax2.text(, dseq_mean[K - 1]-0.01, 'knee: %i' % K, size=13, horizontalalignment='center', verticalalignment='top')
 
     # axis settings
     ax1.set_xlabel('K')

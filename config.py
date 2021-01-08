@@ -14,4 +14,4 @@ NORM = True
 
 # CLUSTERING
 METRIC = 'cosine'
-TRIALS = 1
+TRIALS = 2
