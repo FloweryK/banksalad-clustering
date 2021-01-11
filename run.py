@@ -9,7 +9,6 @@ from multiprocessing import Pool
 from itertools import repeat
 
 
-
 def run(banksalad_path, generate, norm, metric, trials, save):
     # SAVE PATH
     os.makedirs('images/', exist_ok=True)
@@ -39,16 +38,23 @@ def run(banksalad_path, generate, norm, metric, trials, save):
     X = convert_metric(df, metric)
     k_values = np.arange(1, 16)
 
-    seqs = [[KMeans(n_clusters=k, random_state=random.randint(0, 1000)).fit(X).inertia_ for k in k_values] for _ in range(trials)]
-    seqs = np.array(seqs)
-    seqs_norm = (np.max(seqs, axis=1) - seqs)
-    print(seqs_norm)
+    seqs = np.array([[KMeans(n_clusters=k, random_state=random.randint(0, 1000)).fit(X).inertia_ for k in k_values] for _ in range(trials)])
+    seqs_norm = ((np.max(seqs, axis=1) - seqs.T) / (np.max(seqs, axis=1) - np.min(seqs, axis=1))).T.mean(axis=0)
+    k_norm = (k_values - min(k_values)) / (max(k_values) - min(k_values))
+    seqs_distance = seqs_norm - k_norm
+    k_distance = k_norm
+    knee_index = argrelextrema(seqs_distance, np.greater)[0][0]
+    knee = k_values[knee_index]
+    plt.plot(k_values, seqs_norm, label='sequences')
+    plt.plot(k_values, seqs_distance, label='seqeunce distance')
+    plt.grid()
+    plt.legend()
+    plt.show()
 
-    exit()
     labels = find_kmeans_labels(X=convert_metric(df, metric), K=knee)
 
     # VISUALIZE ELBOW METHOD
-    visualize_elbow_method(seq, knee, save_as=save_as + '_elbow.jpg')
+    # visualize_elbow_method(seq, knee, save_as=save_as + '_elbow.jpg')
     visualize_heatmap(df, labels, metric, save_as=save_as + '_heatmap.jpg')
     visualize_clusters(df, labels, knee, save_as=save_as + '_clusters.jpg')
     visualize_in_2D(df, labels, save_as=save_as + '_PCA.jpg')
