@@ -38,7 +38,7 @@ def load_banksalad_as_df(path, freq):
     return df
 
 
-def normalize(df):
+def normalize_df(df):
     return df.div(df.sum(axis=1), axis=0)
 
 
